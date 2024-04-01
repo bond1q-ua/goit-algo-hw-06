@@ -1,71 +1,87 @@
-def input_error(func):
-    def inner(*args, **kwargs):
-        try:
-            return func(*args, **kwargs)
-        except ValueError:
-            return "Whrite me name and phone please."
-        except KeyError:
-            return "Contact is missing."
-        except IndexError:
-            return "Invalid command."
-    return inner
+from collections import UserDict
 
-@input_error
-def add_contact(args, contacts):
-    name, phone = args
-    contacts[name] = phone
-    return "Contact added."
-@input_error
-def change_contact(args, contacts):
-    name, phone = args
-    if name in contacts:
-        contacts[name] = phone
-        return "Contact updated successfully"
-    else:
-        return "Contact is missing."
-@input_error
-def show_phone(args, contacts):
-    name = args.pop(0)
-    try:
-        return contacts[name]
-    except KeyError:
-        return "Contact is missing."
-@input_error
-def parse_input(user_input):
-    cmd, *args = user_input.split()
-    cmd = cmd.strip().lower()
-    return cmd, *args
+class Field:
+    def __init__(self, value):
+        self.value = value
 
-def main():
-    contacts = {}
-    print("Welcome to the assistant bot!")
-    while True:
-        try:
-            user_input = input("Enter a command: ")
-            command, *args = parse_input(user_input)
+    def __str__(self):
+        return str(self.value)
 
-            if command in ["close", "exit"]:
-                print("Good bye!")
-                break
-            elif command == "hello":
-                print("How can I help you? ")
+    def __repr__(self):
+        return str(self.value)
 
-            elif command == "add":
-                print(add_contact(args, contacts))
+class Name(Field):
+    def __init__(self, name=None):
+        if name is None:
+            raise ValueError
+        super().__init__(name)
 
-            elif command == "change":
-                print(change_contact(args, contacts))
+class Phone(Field):
+    def __init__(self, phone):
+        if len(phone) != 10:
+            raise ValueError
+        super().__init__(phone)
 
-            elif command == "phone":
-                print(show_phone(args, contacts))
+class Record:
+    def __init__(self, name):
+        self.name = Name(name)
+        self.phones = list()
 
-            elif command == "all":
-                print(contacts)
+    def add_phone(self, phone):
+        for p in self.phones:
+            if p.value == phone:
+                return
+        self.phones.append(Phone(phone))
 
-            else:
-                print("Invalid command.")
-        except Exception as error:
-            print(f"An error occurred: {error}")
+    def remove_phone(self, phone):
+        for p in self.phones:
+            if p.value == phone:
+                self.phones.remove(p)
+                return
+        raise ValueError
 
-if __name__ == "__main__":
-    main()
+    def edit_phone(self, old_phone, new_phone):
+        for p in self.phones:
+            if p.value == old_phone:
+                p.value = new_phone
+                return
+        raise ValueError
+
+    def find_phone(self, phone):
+        for p in self.phones:
+            if p.value == phone:
+                return p
+        raise ValueError
+
+    def __str__(self):
+        return f'Record(Name: {self.name} Phones: {self.phones})'
+
+    def __repr__(self):
+        return f'Record(Name: {self.name} Phones: {self.phones})'
+
+
+class AddressBook(UserDict):
+    def add_record(self, record: Record):
+        name = record.name.value
+        self.data.update({name: record})
+
+    def find(self, name):
+        return self.get(name)
+
+    def delete(self, name):
+        del self[name]
+
+
+viktor = Record('Viktor')
+viktor.add_phone('9999988812')
+
+addressBook = AddressBook()
+addressBook.add_record(viktor)
+
+maria = Record('Maria')
+maria.add_phone('8888877721')
+
+addressBook.add_record(maria)
+
+print(addressBook.find('Viktor'))
+print(addressBook.find('Maria'))
